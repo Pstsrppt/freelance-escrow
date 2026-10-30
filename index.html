@@ -211,6 +211,8 @@ async function createJob(){
   const r = await send("สร้างข้อตกลง", "createJob", title, desc, wei, deadline, fr);
   if(!r) return;
   const ev = r.logs.map(l=>{try{return contract.interface.parseLog(l)}catch{return null}}).find(x=>x?.name==="JobCreated");
+  // MetaMask estimates gas on its own RPC node, which can lag a block behind; wait so it sees the new job
+  if(ev && $("fDepositNow").checked){ toast("รอให้เครือข่ายยืนยันงานใหม่ก่อนฝากเงิน…", 0); try{ await provider.waitForTransaction(r.hash, 3, 45000); }catch(e){} }
   if(ev && $("fDepositNow").checked) await send(`ฝากเงินงาน #${ev.args.jobId}`, "depositPayment", ev.args.jobId, {value: wei});
   ["fTitle","fDesc","fAmt","fFree"].forEach(i=>$(i).value="");
 }

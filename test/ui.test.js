@@ -45,7 +45,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await sleep(300);
     return w;
   }
-  const until = async (w, fn, ms = 15000) => { const t = Date.now(); while (Date.now() - t < ms) { if (fn(w)) return true; await sleep(200); } return false; };
+  const until = async (w, fn, ms = 60000) => { const t = Date.now(); while (Date.now() - t < ms) { if (fn(w)) return true; await sleep(200); } return false; };
   const text = (w, id) => w.document.getElementById(id).textContent;
 
   console.log("Client: create + deposit through UI");
