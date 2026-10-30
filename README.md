@@ -59,3 +59,15 @@ npm run build          # compile สัญญาและสร้าง index.h
 npm run chain          # เปิด local chain (อีกหน้าต่าง terminal)
 npm test               # ทดสอบสัญญา + หน้าเว็บ
 ```
+
+## ผลการสาธิตบน Sepolia
+
+| งาน | ขั้นตอน | ผล |
+|---|---|---|
+| #1 พัฒนาเว็บไซต์ร้านกาแฟ | สร้าง → ฝาก 0.01 ETH → ส่งงาน → อนุมัติ | ฟรีแลนซ์ได้ 0.01 ETH, อนุมัติซ้ำถูกปฏิเสธ (`already paid`) |
+| #2 ออกแบบโลโก้แบรนด์ | สร้าง → ฝาก 0.01 ETH → แจ้งข้อพิพาท → Admin ตัดสิน | ฟรีแลนซ์ 0.004 ETH, คืนผู้ว่าจ้าง 0.006 ETH |
+
+| | |
+|---|---|
+| ![Deploy](docs/screenshots/01-remix-deploy.jpg) | ![Job 1](docs/screenshots/02-job1-released.jpg) |
+| ![Job 2](docs/screenshots/03-job2-resolved.jpg) | ![History](docs/screenshots/04-transaction-history.jpg) |
