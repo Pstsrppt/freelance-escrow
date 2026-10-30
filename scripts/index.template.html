@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DigitalWork Escrow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f3ee;--panel:#ffffff;--ink:#1c1d1f;--muted:#6b6d72;--line:#e2e0d8;
+  --accent:#1f5f4a;--accent-ink:#ffffff;--accent-soft:#e3efe9;
+  --warn:#9a5b00;--warn-soft:#fbefd9;--danger:#a3271f;--danger-soft:#f8e2df;
+  --info:#24508f;--info-soft:#e2eaf6;--gray-soft:#ecebe6;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141513;--panel:#1d1f1c;--ink:#ecebe6;--muted:#9a9c96;--line:#2f322e;
+  --accent:#5fb995;--accent-ink:#0f1a15;--accent-soft:#1e3229;
+  --warn:#e3a54a;--warn-soft:#352a17;--danger:#ec7a70;--danger-soft:#3a1f1c;
+  --info:#86aee8;--info-soft:#1c2738;--gray-soft:#272925;}}
+:root[data-theme="dark"]{
+  --bg:#141513;--panel:#1d1f1c;--ink:#ecebe6;--muted:#9a9c96;--line:#2f322e;
+  --accent:#5fb995;--accent-ink:#0f1a15;--accent-soft:#1e3229;
+  --warn:#e3a54a;--warn-soft:#352a17;--danger:#ec7a70;--danger-soft:#3a1f1c;
+  --info:#86aee8;--info-soft:#1c2738;--gray-soft:#272925;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.55}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;word-break:break-all}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+h1 small{display:block;font-size:13px;font-weight:400;color:var(--muted)}
+h2{font-size:16px;margin:0 0 12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:860px){.grid{grid-template-columns:360px 1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,textarea,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:64px;resize:vertical}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.danger{color:var(--danger);border-color:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>input{flex:1;min-width:160px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px}
+.s0{background:var(--gray-soft);color:var(--muted)}.s1{background:var(--info-soft);color:var(--info)}
+.s2{background:var(--warn-soft);color:var(--warn)}.s3,.s5{background:var(--accent-soft);color:var(--accent)}
+.s4{background:var(--danger-soft);color:var(--danger)}.s6,.s7{background:var(--gray-soft);color:var(--muted)}
+.meta{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:14px;margin:10px 0}
+.meta dt{color:var(--muted)}.meta dd{margin:0;min-width:0}
+.job{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+.job h3{margin:0;font-size:16px;flex:1}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{font-weight:500}.tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.status{font-size:13px;color:var(--muted)}
+.chip{font-size:12px;background:var(--gray-soft);padding:2px 8px;border-radius:6px;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+a{color:var(--info)}
+.toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:520px;margin:0 auto;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:10px;font-size:14px;display:none;z-index:9}
+.empty{color:var(--muted);font-size:14px;padding:12px 0}
+.actions{border-top:1px dashed var(--line);padding-top:10px;margin-top:6px;display:flex;flex-direction:column;gap:8px}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>DigitalWork Escrow<small>Freelance Escrow &amp; Smart Payment Platform · Ethereum Sepolia</small></h1>
+    <div class="row">
+      <span id="acct" class="status">ยังไม่เชื่อมต่อกระเป๋า</span>
+      <button id="btnConnect" class="primary">เชื่อมต่อ MetaMask</button>
+    </div>
+  </header>
+
+  <div class="panel">
+    <h2>ตั้งค่าสัญญา</h2>
+    <div class="row">
+      <input id="addr" class="mono" placeholder="Contract Address (0x...) ที่ deploy บน Sepolia">
+      <button id="btnLoad">โหลดสัญญา</button>
+    </div>
+    <div id="info" class="status" style="margin-top:8px">กรอก Contract Address แล้วกดโหลด</div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>1. สร้างข้อตกลงการจ้างงาน</h2>
+        <label>ชื่อโครงการ</label><input id="fTitle" placeholder="เช่น พัฒนาเว็บไซต์ร้านกาแฟ">
+        <label>รายละเอียดงาน</label><textarea id="fDesc" placeholder="ขอบเขตงาน / สิ่งที่ต้องส่งมอบ"></textarea>
+        <label>ค่าจ้าง (ETH)</label><input id="fAmt" type="number" step="0.0001" min="0" placeholder="0.01">
+        <label>กำหนดส่ง</label><input id="fDeadline" type="datetime-local">
+        <label>Wallet Address ของฟรีแลนซ์</label><input id="fFree" class="mono" placeholder="0x...">
+        <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="fDepositNow" type="checkbox" style="width:auto" checked> ฝากเงินค่าจ้างทันทีหลังสร้าง</label>
+        <div style="margin-top:12px"><button id="btnCreate" class="primary">สร้างข้อตกลง</button></div>
+      </div>
+      <div class="panel" id="adminPanel" style="display:none">
+        <h2>ผู้ดูแลระบบ (Owner)</h2>
+        <label>เพิ่ม/ถอดสิทธิ์ Arbiter</label>
+        <input id="arbAddr" class="mono" placeholder="0x...">
+        <div class="row" style="margin-top:8px">
+          <button id="btnArbOn">ให้สิทธิ์</button><button id="btnArbOff" class="danger">ถอดสิทธิ์</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <h2 style="margin:0">รายการจ้างงาน</h2>
+          <button id="btnRefresh">รีเฟรช</button>
+        </div>
+        <div class="tabs" id="tabs">
+          <button data-f="all" class="on">ทั้งหมด</button>
+          <button data-f="client">ฉันเป็นผู้ว่าจ้าง</button>
+          <button data-f="free">ฉันเป็นฟรีแลนซ์</button>
+          <button data-f="dispute">ข้อพิพาท</button>
+        </div>
+        <div id="jobs" class="empty">ยังไม่ได้โหลดสัญญา</div>
+      </div>
+
+      <div class="panel">
+        <h2>6. ประวัติธุรกรรม (Transaction Tracking)</h2>
+        <div class="row" style="margin-bottom:8px">
+          <input id="fromBlock" type="number" placeholder="บล็อกเริ่มต้น (ใส่บล็อกที่ deploy เพื่อให้โหลดเร็ว)">
+          <button id="btnHistory">โหลดประวัติ</button>
+        </div>
+        <div class="scroll"><div id="history" class="empty">กดโหลดประวัติเพื่อดู Event ทั้งหมดของสัญญา</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const ABI = __ABI__;
+const SEPOLIA = 11155111n;
+const EXPLORER = "https://sepolia.etherscan.io";
+const STATUS = ["รอฝากเงิน","ฝากเงินแล้ว รอส่งงาน","ส่งงานแล้ว รอตรวจรับ","จ่ายเงินแล้ว","ข้อพิพาท","ตัดสินข้อพิพาทแล้ว","คืนเงินแล้ว","ยกเลิก"];
+const EVT_TH = {JobCreated:"สร้างข้อตกลง",PaymentDeposited:"ฝากเงิน",WorkSubmitted:"ส่งงาน",PaymentReleased:"จ่ายเงินให้ฟรีแลนซ์",
+  DisputeRaised:"แจ้งข้อพิพาท",DisputeResolved:"ตัดสินข้อพิพาท",Refunded:"คืนเงินผู้ว่าจ้าง",JobCancelled:"ยกเลิกงาน",ArbiterUpdated:"แก้สิทธิ์ Arbiter"};
+
+let provider, signer, me, contract, roOwner, isArb = false, filter = "all", jobsCache = [];
+const $ = id => document.getElementById(id);
+const short = a => a ? a.slice(0,6)+"…"+a.slice(-4) : "-";
+const eth = w => ethers.formatEther(w) + " ETH";
+const dt = s => new Date(Number(s)*1000).toLocaleString("th-TH");
+const txLink = h => `<a class="mono" href="${EXPLORER}/tx/${h}" target="_blank" rel="noopener">${h.slice(0,10)}…${h.slice(-6)}</a>`;
+const addrLink = a => `<a class="mono" href="${EXPLORER}/address/${a}" target="_blank" rel="noopener">${short(a)}</a>`;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg, ms=4500){ const t=$("toast"); t.innerHTML=msg; t.style.display="block"; clearTimeout(t._h); if(ms) t._h=setTimeout(()=>t.style.display="none", ms); }
+function store(k,v){ try{ v===undefined ? null : localStorage.setItem(k,v); return localStorage.getItem(k);}catch(e){ return null; } }
+
+function errMsg(e){
+  return e?.reason || e?.info?.error?.message || e?.shortMessage || e?.message || String(e);
+}
+
+async function connect(){
+  if(!window.ethereum){ toast("ไม่พบ MetaMask — กรุณาติดตั้งส่วนขยาย MetaMask แล้วเปิดหน้านี้ผ่าน http:// (เช่น Live Server)"); return; }
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  const net = await provider.getNetwork();
+  if(net.chainId !== SEPOLIA){
+    try{ await window.ethereum.request({method:"wallet_switchEthereumChain", params:[{chainId:"0xaa36a7"}]}); provider = new ethers.BrowserProvider(window.ethereum); }
+    catch(e){ toast("กรุณาเปลี่ยนเครือข่ายใน MetaMask เป็น Sepolia"); return; }
+  }
+  signer = await provider.getSigner(); me = (await signer.getAddress());
+  const bal = await provider.getBalance(me);
+  $("acct").innerHTML = `<span class="mono">${short(me)}</span> · ${Number(ethers.formatEther(bal)).toFixed(4)} ETH`;
+  $("btnConnect").textContent = "เชื่อมต่อแล้ว";
+  if($("addr").value) await loadContract();
+}
+
+async function loadContract(){
+  if(!signer){ await connect(); if(!signer) return; }
+  const a = $("addr").value.trim();
+  if(!ethers.isAddress(a)){ toast("Contract Address ไม่ถูกต้อง"); return; }
+  if((await provider.getCode(a)) === "0x"){ toast("ไม่พบสัญญาที่ Address นี้บน Sepolia"); return; }
+  store("escrowAddr", a);
+  contract = new ethers.Contract(a, ABI, signer);
+  roOwner = await contract.owner();
+  isArb = await contract.isArbiter(me);
+  const [cnt, cb] = await Promise.all([contract.jobCount(), contract.contractBalance()]);
+  const roles = [roOwner.toLowerCase()===me.toLowerCase() ? "Owner" : null, isArb ? "Arbiter" : null].filter(Boolean);
+  $("info").innerHTML = `สัญญา ${addrLink(a)} · จำนวนงาน ${cnt} · เงินใน Escrow ${eth(cb)} · สิทธิ์ของคุณ: ${roles.length ? roles.join(", ") : "ผู้ใช้ทั่วไป"}`;
+  $("adminPanel").style.display = roOwner.toLowerCase()===me.toLowerCase() ? "block" : "none";
+  await loadJobs();
+}
+
+async function send(label, fn, ...args){
+  if(!contract){ toast("กรุณาโหลดสัญญาก่อน"); return null; }
+  try{
+    const opts = (typeof args[args.length-1] === "object" && args[args.length-1] !== null && !Array.isArray(args[args.length-1]) && !(typeof args[args.length-1] === "bigint")) ? args.pop() : {};
+    const est = await contract[fn].estimateGas(...args, opts);
+    const tx = await contract[fn](...args, {...opts, gasLimit: est * 2n + 50000n});
+    toast(`${label}: ส่งธุรกรรมแล้ว รอยืนยัน… ${txLink(tx.hash)}`, 0);
+    const r = await tx.wait();
+    toast(`✅ ${label} สำเร็จ · ${txLink(r.hash)}`, 8000);
+    await loadContract();
+    return r;
+  }catch(e){ toast("❌ " + label + " ไม่สำเร็จ: " + esc(errMsg(e)), 9000); return null; }
+}
+
+async function createJob(){
+  const title=$("fTitle").value.trim(), desc=$("fDesc").value.trim(), amt=$("fAmt").value, dl=$("fDeadline").value, fr=$("fFree").value.trim();
+  if(!title || !amt || !dl || !ethers.isAddress(fr)){ toast("กรอกชื่อโครงการ ค่าจ้าง กำหนดส่ง และ Wallet ฟรีแลนซ์ให้ถูกต้อง"); return; }
+  const wei = ethers.parseEther(amt), deadline = Math.floor(new Date(dl).getTime()/1000);
+  const r = await send("สร้างข้อตกลง", "createJob", title, desc, wei, deadline, fr);
+  if(!r) return;
+  const ev = r.logs.map(l=>{try{return contract.interface.parseLog(l)}catch{return null}}).find(x=>x?.name==="JobCreated");
+  if(ev && $("fDepositNow").checked) await send(`ฝากเงินงาน #${ev.args.jobId}`, "depositPayment", ev.args.jobId, {value: wei});
+  ["fTitle","fDesc","fAmt","fFree"].forEach(i=>$(i).value="");
+}
+
+async function loadJobs(){
+  const n = Number(await contract.jobCount());
+  const ids = Array.from({length:n}, (_,i)=>n-i);
+  jobsCache = await Promise.all(ids.map(id => contract.getJob(id)));
+  renderJobs();
+}
+
+function renderJobs(){
+  const lc = me.toLowerCase();
+  const list = jobsCache.filter(j => filter==="all" || (filter==="client" && j.client.toLowerCase()===lc)
+    || (filter==="free" && j.freelancer.toLowerCase()===lc) || (filter==="dispute" && Number(j.status)===4));
+  if(!list.length){ $("jobs").className="empty"; $("jobs").innerHTML="ไม่มีรายการ"; return; }
+  $("jobs").className="";
+  const now = Date.now()/1000;
+  $("jobs").innerHTML = list.map(j=>{
+    const id = Number(j.id), st = Number(j.status);
+    const isC = j.client.toLowerCase()===lc, isF = j.freelancer.toLowerCase()===lc, late = now > Number(j.deadline);
+    const ev = j.workEvidence ? (/^https?:\/\//.test(j.workEvidence) ? `<a href="${esc(j.workEvidence)}" target="_blank" rel="noopener">${esc(j.workEvidence)}</a>` : `<span class="mono">${esc(j.workEvidence)}</span>`) : "-";
+    let acts = [];
+    if(isC && st===0) acts.push(`<div class="row"><button class="primary" onclick="act('deposit',${id})">2. ฝากเงิน ${eth(j.amount)}</button><button class="danger" onclick="act('cancel',${id})">ยกเลิกงาน</button></div>`);
+    if(isF && (st===1||st===2) && !late) acts.push(`<div class="row"><input id="ev${id}" placeholder="URL หรือ Hash ไฟล์ผลงาน"><button class="primary" onclick="act('submit',${id})">3. ${st===2?"ส่งงานใหม่":"ส่งงาน"}</button></div>`);
+    if(isC && st===2) acts.push(`<div class="row"><button class="primary" onclick="act('approve',${id})">4. อนุมัติและจ่ายเงิน</button></div>`);
+    if((isC||isF) && (st===1||st===2)) acts.push(`<div class="row"><input id="rs${id}" placeholder="เหตุผลข้อพิพาท"><button class="danger" onclick="act('dispute',${id})">5. แจ้งข้อพิพาท</button></div>`);
+    if(isC && st===1 && late) acts.push(`<div class="row"><button onclick="act('refund',${id})">เลยกำหนดส่ง — ขอคืนเงิน</button></div>`);
+    if(isArb && st===4 && !isC && !isF) acts.push(`<div class="row"><input id="sp${id}" type="number" step="0.0001" min="0" placeholder="จ่ายฟรีแลนซ์ (ETH) ที่เหลือคืนผู้ว่าจ้าง"><button class="primary" onclick="act('resolve',${id})">ตัดสิน</button></div>
+      <div class="row"><button onclick="act('resolveAll',${id})">จ่ายฟรีแลนซ์ทั้งหมด</button><button onclick="act('resolveNone',${id})">คืนผู้ว่าจ้างทั้งหมด</button></div>`);
+    return `<div class="job">
+      <div class="row"><h3>#${id} ${esc(j.title)}</h3><span class="pill s${st}">${STATUS[st]}</span></div>
+      <dl class="meta">
+        <dt>รายละเอียด</dt><dd>${esc(j.description)||"-"}</dd>
+        <dt>ค่าจ้าง</dt><dd>${eth(j.amount)} <span class="chip">ใน Escrow ${eth(j.escrowBalance)}</span></dd>
+        <dt>กำหนดส่ง</dt><dd>${dt(j.deadline)} ${late && st<3 ? '<span class="chip">เลยกำหนด</span>':""}</dd>
+        <dt>ผู้ว่าจ้าง</dt><dd>${addrLink(j.client)} ${isC?'<span class="chip">คุณ</span>':""}</dd>
+        <dt>ฟรีแลนซ์</dt><dd>${addrLink(j.freelancer)} ${isF?'<span class="chip">คุณ</span>':""}</dd>
+        <dt>หลักฐานงาน</dt><dd>${ev}</dd>
+        ${j.disputeReason ? `<dt>ข้อพิพาท</dt><dd>${esc(j.disputeReason)} (โดย ${short(j.disputeRaisedBy)})</dd>`:""}
+        <dt>อัปเดตล่าสุด</dt><dd>${dt(j.updatedAt)}</dd>
+      </dl>
+      ${acts.length ? `<div class="actions">${acts.join("")}</div>` : ""}
+      <div style="margin-top:8px"><button onclick="jobHistory(${id}, this)">ดูธุรกรรมของงานนี้</button><div id="jh${id}"></div></div>
+    </div>`;
+  }).join("");
+}
+
+async function act(kind, id){
+  const j = jobsCache.find(x=>Number(x.id)===id);
+  if(kind==="deposit") return send(`ฝากเงินงาน #${id}`, "depositPayment", id, {value: j.amount});
+  if(kind==="cancel") return send(`ยกเลิกงาน #${id}`, "cancelJob", id);
+  if(kind==="submit"){ const v=$("ev"+id).value.trim(); if(!v) return toast("กรอก URL หรือ Hash ของไฟล์ผลงาน"); return send(`ส่งงาน #${id}`, "submitWork", id, v); }
+  if(kind==="approve"){ if(!confirm(`ยืนยันอนุมัติงาน #${id} และโอน ${eth(j.escrowBalance)} ให้ฟรีแลนซ์?`)) return; return send(`อนุมัติงาน #${id}`, "approveAndRelease", id); }
+  if(kind==="dispute"){ const v=$("rs"+id).value.trim(); if(!v) return toast("กรอกเหตุผลข้อพิพาท"); return send(`แจ้งข้อพิพาท #${id}`, "raiseDispute", id, v); }
+  if(kind==="refund") return send(`ขอคืนเงิน #${id}`, "refundAfterDeadline", id);
+  if(kind==="resolveAll") return send(`ตัดสิน #${id}`, "resolveDispute", id, j.escrowBalance);
+  if(kind==="resolveNone") return send(`ตัดสิน #${id}`, "resolveDispute", id, 0n);
+  if(kind==="resolve"){ const v=$("sp"+id).value; if(v==="") return toast("กรอกจำนวน ETH ที่จ่ายให้ฟรีแลนซ์"); return send(`ตัดสิน #${id}`, "resolveDispute", id, ethers.parseEther(v)); }
+}
+
+async function fetchLogs(topicsJobId){
+  const latest = await provider.getBlockNumber();
+  const fb = $("fromBlock").value ? (Number($("fromBlock").value) > latest ? 0 : Number($("fromBlock").value)) : null;
+  const run = async from => {
+    if(topicsJobId == null) return contract.queryFilter("*", from, "latest");
+    const names = ["JobCreated","PaymentDeposited","WorkSubmitted","PaymentReleased","DisputeRaised","DisputeResolved","Refunded","JobCancelled"];
+    const all = await Promise.all(names.map(n => contract.queryFilter(contract.filters[n](topicsJobId), from, "latest")));
+    return all.flat();
+  };
+  try{ return await run(fb ?? 0); }
+  catch(e){ return await run(Math.max(0, latest - 45000)); }
+}
+
+function logRows(logs){
+  logs.sort((a,b)=> a.blockNumber-b.blockNumber || a.index-b.index);
+  return logs.map(l=>{
+    const n = l.fragment?.name || l.eventName || "?", a = l.args || {};
+    let d = "";
+    if(n==="JobCreated") d = `${esc(a.title)} · ${eth(a.amount)} · ฟรีแลนซ์ ${short(a.freelancer)}`;
+    else if(n==="PaymentDeposited") d = eth(a.amount);
+    else if(n==="WorkSubmitted") d = esc(a.evidence);
+    else if(n==="PaymentReleased") d = `${eth(a.amount)} → ${short(a.freelancer)}`;
+    else if(n==="DisputeRaised") d = `${esc(a.reason)} (โดย ${short(a.raisedBy)})`;
+    else if(n==="DisputeResolved") d = `ฟรีแลนซ์ ${eth(a.toFreelancer)} · ผู้ว่าจ้าง ${eth(a.toClient)}`;
+    else if(n==="Refunded") d = eth(a.amount);
+    else if(n==="ArbiterUpdated") d = `${short(a.account)} = ${a.allowed}`;
+    const jid = a.jobId !== undefined ? "#"+a.jobId : "-";
+    return `<tr><td>${l.blockNumber}</td><td>${jid}</td><td>${EVT_TH[n]||n}</td><td>${d}</td><td>${txLink(l.transactionHash)}</td></tr>`;
+  }).join("");
+}
+
+async function loadHistory(){
+  if(!contract) return toast("กรุณาโหลดสัญญาก่อน");
+  $("history").innerHTML = "กำลังโหลด…";
+  try{
+    const logs = await fetchLogs(null);
+    $("history").className = "";
+    $("history").innerHTML = logs.length ? `<table><thead><tr><th>Block</th><th>งาน</th><th>เหตุการณ์</th><th>รายละเอียด</th><th>Tx Hash</th></tr></thead><tbody>${logRows(logs)}</tbody></table>` : "ยังไม่มีธุรกรรม";
+  }catch(e){ $("history").innerHTML = "โหลดไม่สำเร็จ: " + esc(errMsg(e)) + " — ลองใส่บล็อกเริ่มต้นเป็นบล็อกที่ deploy"; }
+}
+
+async function jobHistory(id, btn){
+  const box = $("jh"+id); box.innerHTML = "กำลังโหลด…";
+  try{
+    const logs = await fetchLogs(id);
+    box.innerHTML = `<div class="scroll"><table style="margin-top:8px"><thead><tr><th>Block</th><th>งาน</th><th>เหตุการณ์</th><th>รายละเอียด</th><th>Tx Hash</th></tr></thead><tbody>${logRows(logs)}</tbody></table></div>`;
+  }catch(e){ box.innerHTML = "โหลดไม่สำเร็จ: " + esc(errMsg(e)); }
+}
+
+$("btnConnect").onclick = () => connect().catch(e=>toast(esc(errMsg(e))));
+$("btnLoad").onclick = () => loadContract().catch(e=>toast(esc(errMsg(e))));
+$("btnRefresh").onclick = () => contract ? loadContract() : toast("กรุณาโหลดสัญญาก่อน");
+$("btnCreate").onclick = createJob;
+$("btnHistory").onclick = loadHistory;
+$("btnArbOn").onclick = () => send("ให้สิทธิ์ Arbiter","setArbiter",$("arbAddr").value.trim(),true);
+$("btnArbOff").onclick = () => send("ถอดสิทธิ์ Arbiter","setArbiter",$("arbAddr").value.trim(),false);
+$("tabs").onclick = e => { const b=e.target.closest("button"); if(!b) return; filter=b.dataset.f; [...$("tabs").children].forEach(x=>x.classList.toggle("on",x===b)); if(jobsCache.length || contract) renderJobs(); };
+const DEFAULT_ADDR = "0x858BA7dB6caDe1F2c814b8830012fe2018c482EA", DEFAULT_BLOCK = "12027090";
+$("addr").value = store("escrowAddr") || DEFAULT_ADDR;
+const fb = store("escrowFromBlock") || DEFAULT_BLOCK; $("fromBlock").value = fb;
+$("fromBlock").onchange = () => store("escrowFromBlock", $("fromBlock").value);
+const d = new Date(Date.now()+7*864e5); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); $("fDeadline").value = d.toISOString().slice(0,16);
+if(window.ethereum){
+  window.ethereum.request({method:"eth_accounts"}).then(a=>{ if(a.length) connect().catch(()=>{}); }).catch(()=>{});
+  window.ethereum.on?.("accountsChanged", () => location.reload());
+  window.ethereum.on?.("chainChanged", () => location.reload());
+}
+</script>
+</body>
+</html>

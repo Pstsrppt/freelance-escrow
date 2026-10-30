@@ -1,0 +1,17 @@
+{
+  "name": "freelance-escrow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CSI301 - Freelance Escrow & Smart Payment Platform (Solidity + ethers.js dApp on Sepolia)",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "chain": "ganache --logging.quiet --wallet.totalAccounts 5 --chain.chainId 11155111",
+    "test": "node test/contract.test.js && node test/ui.test.js"
+  },
+  "devDependencies": {
+    "ethers": "6.17.0",
+    "ganache": "7.9.2",
+    "jsdom": "^24.0.0",
+    "solc": "0.8.24"
+  }
+}
