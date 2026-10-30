@@ -10,6 +10,7 @@ Smart Contract ถือเงินค่าจ้างไว้แบบ Escr
 | **Network** | Ethereum Sepolia Testnet |
 | **Contract Address** | [`0x858BA7dB6caDe1F2c814b8830012fe2018c482EA`](https://sepolia.etherscan.io/address/0x858BA7dB6caDe1F2c814b8830012fe2018c482EA) |
 | **Deploy Block** | 12027090 |
+| **Etherscan** | ✅ Source Code Verified (Exact Match) |
 | **Compiler** | Solidity 0.8.34 (Remix) · `pragma ^0.8.20` |
 
 ## โครงสร้างไฟล์
